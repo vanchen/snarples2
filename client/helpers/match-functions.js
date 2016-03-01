@@ -19,7 +19,7 @@ startMatch = function(match) {
      Find dealer and return updated document
      TO DO:  Add animation
   */
-  Session.set('animationSpeed', {fast: 0, medium: 2000, slow: 3000})
+  Session.set('animationSpeed', {fast: 1000, medium: 2000, slow: 2500})
   var index = getPlayerIndex(match,Meteor.user()._id);
   // CONTROL-FLOW #1: DEAL ONE CARD
   if (match.players[index].cards.length == 0 && match.fieldCards.length == 0) {
@@ -352,7 +352,8 @@ updateMatch = function(match) {
           cardsPlayed: match.cardsPlayed,
           cardsDealt: match.cardsDealt,
           dealer: match.dealer,
-          roundCheck: match.roundCheck
+          roundCheck: match.roundCheck,
+          winner: match.winner
           }
         });
 }
@@ -424,26 +425,31 @@ updateScore = function(match) {
      Subtract currentTrick from Score for each player
   */
   for (var i=0; i < match.players.length; i++) {
-    if (match.players[i].highBidder){
-      if (match.players[i].currentBid > match.players[i].currentTrick) {
-        match.players[i].score = match.players[i].score + 5;
-        match.players[i].currentTrick = 0;
-        match.players[i].highBidder = false;
+    // Check to see who is playing this round
+    if (match.players[i].isPlaying) {
+      // High Bidder must make their bid, or else punted.
+      if (match.players[i].highBidder){
+        if (match.players[i].currentBid > match.players[i].currentTrick) {
+          match.players[i].score = match.players[i].score + 5;
+          match.players[i].currentTrick = 0;
+          match.players[i].highBidder = false;
+        }
+        else {
+          match.players[i].score = match.players[i].score - match.players[i].currentTrick
+          match.players[i].currentTrick = 0;
+          match.players[i].highBidder = false;
+        }
       }
+      // If not high biddder, player must get at least one trick
       else {
-        match.players[i].score = match.players[i].score - match.players[i].currentTrick
-        match.players[i].currentTrick = 0;
-        match.players[i].highBidder = false;
-      }
-    }
-    else {
-      if (match.players[i].currentTrick == 0) {
-        match.players[i].score = match.players[i].score + 5
-        match.players[i].currentTrick = 0;
-      }
-      else {
-        match.players[i].score = match.players[i].score - match.players[i].currentTrick
-        match.players[i].currentTrick = 0;
+        if (match.players[i].currentTrick == 0) {
+          match.players[i].score = match.players[i].score + 5
+          match.players[i].currentTrick = 0;
+        }
+        else {
+          match.players[i].score = match.players[i].score - match.players[i].currentTrick
+          match.players[i].currentTrick = 0;
+        }
       }
     }
   }
@@ -466,12 +472,13 @@ updateScore = function(match) {
 
 resetBids = function(match) {
   /* Document -> Document
-     Reset currentBids to 0 and madeBids to false
+     Reset currentBids to 0 and madeBids to false.. also reset isPlaying and isPlayingChoice player properties
  */
  for (var i=0; i< match.players.length; i++) {
    match.players[i].currentBid = 0;
    match.players[i].bidMade = false;
    match.players[i].isPlaying = false;
+   match.players[i].isPlayingChoice = false
    }
  return match
 }
@@ -554,6 +561,66 @@ changeDealer = function(match) {
 /////////////////////////
 /* MATCH FUNCTIONS */
 /////////////////////////
+
+checkIfPunted = function(match) {
+  /* Document -> Document
+    Check if any players have been punted. If so, remove from game.
+  */
+  for (let i=0; i <match.players.length; i++) {
+    if (match.players[i].score > 32) {
+      console.log(match.players[i].userId + " " + "has been punted!")
+      if (match.players[i].dealer) {
+        if (i == 0) {
+          match.players[match.players.length -1].dealer = true
+        }
+        else {
+          match.players[i-1].dealer = true
+        }
+      }
+      match.players.splice(i,1)
+    }
+  }
+  return match
+}
+
+checkIfWinner = function(match) {
+  /* Document -> Document
+    Check if anyone has won the game (score <= 0)
+  */
+  for (let i=0; i <match.players.length; i++) {
+    if (match.players[i].score <= 0) {
+      alert(match.players[i].userId + " " + "has won!!")
+      match.winner = true;
+    }
+  }
+  return match
+
+
+}
+
+checkIfPlaying = function(match,index) {
+  if (match.players[index].currentBid >= 1) {
+    match.players[index].isPlaying = true
+    match.players[index].isPlayingChoice = true
+    match.players[index].currentBid = 1
+    return match
+  }
+  if (match.players[index].currentBid == 0) {
+    if (match.players[index].cards[0].number > 9) {
+      match.players[index].isPlaying = true
+      match.players[index].isPlayingChoice = true
+      match.players[index].currentBid = 1
+      return match
+    }
+    else {
+      match.players[index].isPlaying = false
+      match.players[index].cards = []
+      match.players[index].isPlayingChoice = true
+      match.players[index].currentBid = 0
+      return match
+    }
+  }
+}
 
 
 findWinner = function(match,cards,trumpCard) {

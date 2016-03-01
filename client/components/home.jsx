@@ -38,7 +38,8 @@ Home = React.createClass({
         roundCheck: false,
         cardsPlayed: 0,
         cardsDealt: false,
-        dealer: false
+        dealer: false,
+        winner: false
       });
     },
 
@@ -65,7 +66,8 @@ Home = React.createClass({
         roundCheck: false,
         cardsPlayed: 0,
         cardsDealt: false,
-        dealer: false
+        dealer: false,
+        winner: false
       });
     },
 

@@ -27,12 +27,13 @@ const trumpCard = {position: 'absolute', left: '81%', height: '92%', width: '15%
 var cStyle = {width: '12%'}
 const {Spring} = ReactMotion // USE: Animation of cards
 
-// Session Variables to ensure proper timing of animation
+// Session Variables to ensure proper timing of animation.... note: is this pattern the most efficient?
 Session.setDefault('makingBid', false)
 Session.setDefault('pickingTrump',false)
 Session.setDefault('playCard',false)
 Session.setDefault('updatingMatch',false)
 Session.setDefault('PlayOrSit',false)
+Session.setDefault('updatingMatch',false)
 // Animation Speeds.. Controlled By User
 
 
@@ -76,6 +77,8 @@ Arena = React.createClass({
     var index = getPlayerIndex(match,Meteor.user()._id);
     match.players[index].pickTrump = false;
     Session.set('pickingTrump',false)
+    match.players[index].isPlayingChoice = true
+    match.players[index].isPlaying = true
     //match.players[index].turn = false;
     //match = changeTurnLeftOfDealer(match)
     match = changeTurn(match)
@@ -314,6 +317,12 @@ Arena = React.createClass({
     match = this.data.match
     var turnId = ""
 
+    // 0: if game is over, run logic
+    if (match.winner) {
+      alert("This game is over! The Winner is ____")
+    }
+
+
     // 1: Start match if all players are in the Arena
     if (!match.dealer && match.players.length == match.totalPlayers) {
       match = startMatch(match);
@@ -322,12 +331,14 @@ Arena = React.createClass({
     }
 
     // 2: If match has dealer, allow game to start
-    if (match.dealer && Session.get('updatingMatch') == false) {
+    if (match.dealer && Session.get('updatingMatch') == false && match.winner == false) {
 
     // 3: End Round
     if (match.round == 5) {
       console.log("Ending round...")
       match = updateScore(match);
+      match = checkIfPunted(match)
+      match = checkIfWinner(match)
       match = changeDealer(match);
       match = changeTurnLeftOfDealer(match);
       // ARBITRARY FIX... better way is to only reset the cards that have already been played
@@ -343,7 +354,8 @@ Arena = React.createClass({
       match.roundCheck = false;
       match.trump = 'none'
       Session.set('playCard',false)
-      Session.set('animationSpeed', {fast: 0, medium: 2000, slow: 3000})
+      Session.set('animationSpeed', {fast: 1000, medium: 2000, slow: 3000})
+      Session.set('updatingMatch',false)
         }
 
       // 4: Deal cards
@@ -358,6 +370,8 @@ Arena = React.createClass({
       // 5: Make bids
       if (bidsComplete(match) == false) {
         turnId = getPlayerTurn(match)
+        console.log(match)
+        console.log(turnId)
         if (Session.get('makingBid') == false) {
           if (turnId[0] + turnId[1] + turnId[2] == 'com') {
             Session.set('makingBid',true)
@@ -394,6 +408,7 @@ Arena = React.createClass({
 
       // 7: Play or Sit
       if (checkIfRoundCheck(match) == false && bidsComplete(match) && match.trump != 'none'){
+        // If trump is spades, everyone must play
         if (match.trump == 'spades') {
           for (let i = 0; i < match.players.length; i++) {
             match.players[i].isPlaying = true
@@ -414,9 +429,10 @@ Arena = React.createClass({
                 if (match.players[index].highBidder == false) {
                   match = changeTurn(match)
                   // REQUIRED: Algorithm to determine if a computer is playing or not. If player bids high, must play.
-                  match.players[index].isPlaying = true;
-                  match.players[index].isPlayingChoice = true;
-                  match.players[index].currentBid = 1;
+                  match = checkIfPlaying(match,index)
+                  //match.players[index].isPlaying = true;
+                  //match.players[index].isPlayingChoice = true;
+                  //match.players[index].currentBid = 1;
                 }
                 else {
                   match.players[index].isPlaying = true
@@ -447,7 +463,7 @@ Arena = React.createClass({
         if (bidsComplete(match) && Session.get('playCard') && match.roundCheck == true && match.players[getPlayerIndex(match,turnId)].isPlaying) {
         Meteor.setTimeout(function() {
           match = playComputerCard(match,turnId)
-          updateMatch(match)}, Session.get('animationSpeed').slow)
+          updateMatch(match)}, Session.get('animationSpeed').fast)
         }
       }
 
@@ -470,6 +486,7 @@ Arena = React.createClass({
         for (let i=0; i< match.players.length; i++) {
           match.players[i].turn = false
         }
+        console.log("Updating tricks....")
         Session.set('updatingMatch',true)
         Meteor.setTimeout(function() {
           match = updateTrick(match)
