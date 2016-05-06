@@ -10,6 +10,10 @@ var bidBoxArray = [{position: 'absolute',height:'48%',width:'15%',top:'30%',left
 {position: 'absolute',height:'48%',width:'15%',top:'30%',left:'65%',opacity:1},
 {position: 'absolute',height:'48%',width:'15%',top:'30%',left:'80%',opacity:1}]
 
+var topRightText = {position: 'absolute', left: '85%', top:'1%'}
+
+const circleStyle = {borderRadius: '50%',width: '200px',height: '200px'}
+
 const trumpBox1 =  {position: 'absolute',height:'48%',width:'18%',top:'30%',left:'11%'}
 const trumpBox2 =  {position: 'absolute',height:'48%',width:'18%',top:'30%',left:'32%'}
 const trumpBox3 =  {position: 'absolute',height:'48%',width:'18%',top:'30%',left:'53%'}
@@ -20,10 +24,14 @@ var sitBox =  {position: 'absolute',height:'48%',width:'40%',top:'30%',left:'50%
 
 var userStyle = {position: 'absolute', width: '100%', height: '30%',top: '70%',left: '0',opacity:1};
 var cardsStyle = {position: 'absolute', left: '22%', width:'75%'}
-const scoreStyle = {position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%, -50%)'}
-const profileStyle ={position: 'absolute', width: '15%', height: '92%',left: '4%', background: 'white'}
+const scoreStyle = {position: 'absolute', top: '25%', left: '13%', transform: 'translate(-50%, -50%)','font-family':'titleFont', 'font-size':'150%','color':'white'}
+const bidStyle = {position: 'absolute', top: '40%', left: '13%', transform: 'translate(-50%, -50%)','font-family':'titleFont', 'font-size':'150%','color':'white'}
+const profileStyle ={position: 'absolute',left: '4%',bottom:'50%'}
+const trickStyle = {position: 'absolute', top: '55%', left: '13%', transform: 'translate(-50%, -50%)','font-family':'titleFont', 'font-size':'150%','color':'white'}
 const trumpStyle = {position: 'absolute', width: '50%', top: '30%', left: '25%'}
-const trumpCard = {position: 'absolute', left: '81%', height: '92%', width: '15%'}
+const trumpCard = {position: 'absolute', left: '81%', height: '92%', width: '15%','background':'#DFE2DB','border-style':'none'}
+const trumpBG = {background: '#DFE2DB','border-style': 'none'}
+
 var cStyle = {width: '12%'}
 const {Spring} = ReactMotion // USE: Animation of cards
 
@@ -52,6 +60,7 @@ Arena = React.createClass({
       match: match,
       user: Meteor.user(),
       width: window.innerWidth,
+      text: Session.get('playText')
     }
   },
 
@@ -76,6 +85,7 @@ Arena = React.createClass({
     var match = this.data.match
     var index = getPlayerIndex(match,Meteor.user()._id);
     match.players[index].pickTrump = false;
+    Session.set('playText', "User is picking " + e.currentTarget.id)
     Session.set('pickingTrump',false)
     match.players[index].isPlayingChoice = true
     match.players[index].isPlaying = true
@@ -87,14 +97,40 @@ Arena = React.createClass({
     });
   },
 
+  pointsOrPunt(e) {
+    var match = this.data.match
+    var index = getPlayerIndex(match,Meteor.user()._id);
+    if (e.currentTarget.id == 'points') {
+      match.players[index].score -= 5;
+      match.round = 5;
+    }
+    else {
+      for (var i=0; i < match.players.length; i++) {
+        if (match.players[i].userId != Meteor.user()._id) {
+          match.players[i].score += 5;
+        }
+      }
+      match.round = 5;
+    }
+    Matches.update(match._id,{
+      $set :{
+            players: match.players,
+            round: match.round,
+            }
+          });
+  },
+
+
   playOrSit(e) {
     var match = this.data.match
     console.log(e.currentTarget.id)
     var index = getPlayerIndex(match,Meteor.user()._id);
     // If User decides to play
     if (e.currentTarget.id == 'play') {
+      Session.set("playText", "User is playing...")
       match.players[index].isPlaying = true
       match.players[index].isPlayingChoice = true
+      match.players[index].sits = 0
       if (match.players[index].highBidder) {
         match.players[index].turn = false
         match = changeTurnLeftOfDealer(match)
@@ -106,8 +142,13 @@ Arena = React.createClass({
       }
     // If user decides to sit.
     else {
+      Session.set("playText", "User is sitting...")
       match.players[index].isPlaying = false
       match.players[index].isPlayingChoice = true;
+      match.players[index].sits += 1;
+      if (match.players[index].score <= 5) {
+        match.players[index].score += 1;
+      }
       match = changeTurn(match)
       match.players[index].cards = []
       Session.set('animationSpeed',{slow:500,medium:500,fast:500})
@@ -124,6 +165,14 @@ Arena = React.createClass({
 
   var match = this.data.match;
   var index = getPlayerIndex(match,Meteor.user()._id)
+  var count = 0;
+  var bidText ={background: '#DFE2DB'}
+  var bidT ={'font-family':'titleFont', 'font-size':'120%','color':'black'}
+  for (let i = 0; i < match.players.length; i++) {
+    if (match.players[i].isPlaying) {
+      count += 1
+    }
+  }
 
   // Check if it is user's turn to pick their bid
   if (match.cardsDealt == true && match.players[index].bidMade == false && match.players[index].turn == true) {
@@ -136,14 +185,14 @@ Arena = React.createClass({
     }
 
     return  (<div className="panel panel-info" style={makeBid}>
-              <div className="panel-heading"> Make Your Bid: </div>
+              <div className="panel-heading" style={bidText}> <div style={bidT} > Make Your Bid: </div> </div>
               <div className="panel-body">
-                <div className="thumbnail bidBox1" id="bid0" onClick={this.pickBid} style={bidBoxArray[0]}> <h3 className="text-center"> 0 </h3></div>
-                <div className="thumbnail bidBox1" id="bid1" onClick={this.pickBid} style={bidBoxArray[1]}> <h3 className="text-center"> 1 </h3></div>
-                <div className="thumbnail bidBox2" id="bid2" onClick={this.pickBid} style={bidBoxArray[2]}> <h3 className="text-center"> 2 </h3></div>
-                <div className="thumbnail bidBox3" id="bid3" onClick = {this.pickBid} style={bidBoxArray[3]}> <h3 className="text-center"> 3 </h3></div>
-                <div className="thumbnail bidBox4" id="bid4" onClick = {this.pickBid} style={bidBoxArray[4]}> <h3 className="text-center"> 4 </h3></div>
-                <div className="thumbnail bidBox5" id="bid5"  onClick = {this.pickBid} style={bidBoxArray[5]}> <h3 className="text-center"> 5 </h3></div>
+                <div className="thumbnail bidBox1" id="bid0" onClick={this.pickBid} style={bidBoxArray[0]}> <h3 style={bidT} className="text-center"> 0 </h3></div>
+                <div className="thumbnail bidBox1" id="bid1" onClick={this.pickBid} style={bidBoxArray[1]}> <h3 style={bidT} className="text-center"> 1 </h3></div>
+                <div className="thumbnail bidBox2" id="bid2" onClick={this.pickBid} style={bidBoxArray[2]}> <h3 style={bidT} className="text-center"> 2 </h3></div>
+                <div className="thumbnail bidBox3" id="bid3" onClick = {this.pickBid} style={bidBoxArray[3]}> <h3 style={bidT} className="text-center"> 3 </h3></div>
+                <div className="thumbnail bidBox4" id="bid4" onClick = {this.pickBid} style={bidBoxArray[4]}> <h3 style={bidT} className="text-center"> 4 </h3></div>
+                <div className="thumbnail bidBox5" id="bid5"  onClick = {this.pickBid} style={bidBoxArray[5]}> <h3 style={bidT} className="text-center"> 5 </h3></div>
               </div>
               </div>
             )
@@ -152,7 +201,7 @@ Arena = React.createClass({
   // Check if it is user's turn to pick trump
   if (match.cardsDealt == true && match.players[index].bidMade == true && match.players[index].pickTrump == true) {
     return  (<div className="panel panel-info" style={makeBid}>
-              <div className="panel-heading"> Pick Trump: </div>
+              <div className="panel-heading" style={bidText}> <div style={bidT}> Pick Trump:</div> </div>
               <div className="panel-body">
                 <div className="thumbnail bidBox1" id="spades" onClick={this.pickTrump} style={trumpBox1}> <img src="spade.png"/> </div>
                 <div className="thumbnail bidBox2" id="hearts" onClick={this.pickTrump} style={trumpBox2}> <img src="hearts.jpg"/> </div>
@@ -164,22 +213,36 @@ Arena = React.createClass({
           }
 
   if (checkIfRoundCheck(match) == false && match.cardsDealt == true && match.players[index].bidMade == true && match.players[index].turn == true && match.trump != 'none') {
-    if (match.players[index].highBidder) {
+    if (match.players[index].highBidder || match.players[index].sits == 2) {
       match.players[index].isPlaying = true;
+      match.players[index].isPlayingChoice = true;
+      match.players[index].sits = 0;
+      match = changeTurn(match)
       updateMatch(match)
     }
     else {
         return  (<div className="panel panel-info" style={playOrSit}>
-              <div className="panel-heading"> Play or Sit? </div>
+              <div className="panel-heading" style={bidText}> <div style={bidT}> Play or Sit? </div> </div>
               <div className="panel-body">
-                <div className="thumbnail bidBox1" id="play" onClick={this.playOrSit} style={playBox}>  <h3 className="text-center"> Play </h3></div>
-                <div className="thumbnail bidBox3" id="sit" onClick={this.playOrSit} style={sitBox}>  <h3 className="text-center"> Sit </h3> </div>
+                <div className="thumbnail bidBox1" id="play" onClick={this.playOrSit} style={playBox}>  <h3 style={bidT} className="text-center"> Play </h3></div>
+                <div className="thumbnail bidBox3" id="sit" onClick={this.playOrSit} style={sitBox}>  <h3 style={bidT} className="text-center"> Sit </h3> </div>
                 </div>
               </div>
               )
           }
         }
-  },
+
+  if (checkIfRoundCheck(match) && count == 1 && match.cardsDealt == true && match.players[index].bidMade == true && match.players[index].turn == true && match.trump != 'none') {
+    return  (<div className="panel panel-info" style={playOrSit}>
+          <div className="panel-heading"> Points or Punt? </div>
+          <div className="panel-body">
+            <div className="thumbnail bidBox1" id="points" onClick={this.pointsOrPunt} style={playBox}>  <h3 className="text-center"> Points </h3></div>
+            <div className="thumbnail bidBox3" id="punt" onClick={this.pointsOrPunt} style={sitBox}>  <h3 className="text-center"> Punt </h3> </div>
+            </div>
+          </div>
+          )
+  }
+},
 
   renderCards(){
     var match = this.data.match
@@ -224,11 +287,14 @@ Arena = React.createClass({
   renderPlayers(){
     var match = this.data.match
     // Only allows for the maxium of 5 non-user Players. Ideally this should be extened to nine computer players.
-    var playerStyleArray = [{position: 'absolute', top: '50%', left: '10%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white',opacity:0.5},
-    {position: 'absolute', top: '18%', left: '20%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white',opacity:0.5},
-    {position: 'absolute', top: '18%', left: '47%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white',opacity:0.5},
-    {position: 'absolute', top: '18%', left: '80%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white',opacity:0.5},
-    {position: 'absolute', top: '50%', left: '90%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white',opacity:0.5}]
+    var playerStyleArray = [{position: 'absolute', top: '40%', left: '10%', transform: 'translate(-50%, -50%)',opacity:0.5},
+    {position: 'absolute', top: '8%', left: '10%', transform: 'translate(-50%, -50%)',opacity:0.5},
+    {position: 'absolute', top: '8%', left: '30%',  transform: 'translate(-50%, -50%)', opacity:0.5},
+    {position: 'absolute', top: '8%', left: '50%', transform: 'translate(-50%, -50%)', opacity:0.5},
+    {position: 'absolute', top: '8%', left: '70%',  transform: 'translate(-50%, -50%)', opacity:0.5},
+    {position: 'absolute', top: '8%', left: '90%',  transform: 'translate(-50%, -50%)',opacity:0.5},
+    {position: 'absolute', top: '40%', left: '90%',  transform: 'translate(-50%, -50%)', opacity:0.5}
+    ]
     var playerArray = []
     var currentPlayerIndex = getPlayerIndex(match, Meteor.user()._id)
     // Push to PlayerArray.. Arrange such that players are arranged to the left of the user.
@@ -244,18 +310,37 @@ Arena = React.createClass({
     return playerArray.map((player) => {
       var playerStyle = playerStyleArray[count];
       count +=1;
+
+
       if (player.isPlaying) {
         playerStyle.opacity = 1
       }
       else {
+        if (player.score > 32) {
+          playerStyle.opacity = 0;
+        }
+        else {
         playerStyle.opacity = 0.5
+        }
       }
+
       var score = player.score
       return (
         <Player match={match} player={player} playerStyle={playerStyle} />
         )
       });
     },
+
+
+  renderTricks() {
+    var tricks = 0;
+    for (var i=0; i < match.players.length; i++) {
+      if (match.players[i].userId == Meteor.user()._id) {
+        tricks = match.players[i].currentTrick
+      }
+    }
+    return tricks
+  },
 
   renderBidBoxes() {
     var match = this.data.match;
@@ -267,7 +352,8 @@ Arena = React.createClass({
         tricks = match.players[i].currentTrick
       }
     }
-    var bidArray = [{size:10, background: 'white'},{size: 26, background: 'white'},{size:42,background: 'white'},{size:58,background: 'white'},{size:74,background: 'white'}];
+    return bids
+    var bidArray = [{size:10, background: 'white',opacity:1},{size: 26, background: 'white'},{size:42,background: 'white'},{size:58,background: 'white'},{size:74,background: 'white'}];
     for (var i=0; i < bids; i++) {
       bidArray[i].background = 'black';
     }
@@ -295,7 +381,7 @@ Arena = React.createClass({
     // Can be added to the render method if the extension is fixed.
     var match = this.data.match
     if (match.trump == 'hearts') {
-      return match.trump + '.jpg'
+      return match.trump + '.png'
     }
     if (match.trump == 'spades' || match.trump == 'clubs' || match.trump == 'diamonds') {
       return match.trump + '.png'
@@ -313,67 +399,86 @@ Arena = React.createClass({
     }
   },
 
+  renderText() {
+    var text = this.data.text
+    return (
+      <div style={topRightText}>
+        <code> {text}</code>
+      </div>
+    )
+  },
+
   render() {
     match = this.data.match
     var turnId = ""
+    console.log(window.innerWidth)
 
-    // 0: if game is over, run logic
+    // END OF GAME //
+
     if (match.winner) {
       alert("This game is over! The Winner is ____")
     }
 
+    ///////////////////////
 
-    // 1: Start match if all players are in the Arena
+
+    // START OF MATCH //
+
     if (!match.dealer && match.players.length == match.totalPlayers) {
       match = startMatch(match);
-
-      console.log("Starting match...")
     }
 
-    // 2: If match has dealer, allow game to start
+    ///////////////////////
+
+    // GAME FLOW //
+
     if (match.dealer && Session.get('updatingMatch') == false && match.winner == false) {
 
-    // 3: End Round
-    if (match.round == 5) {
-      console.log("Ending round...")
-      match = updateScore(match);
-      match = checkIfPunted(match)
-      match = checkIfWinner(match)
-      match = changeDealer(match);
-      match = changeTurnLeftOfDealer(match);
-      // ARBITRARY FIX... better way is to only reset the cards that have already been played
-      match.cards = deckReset(match);
-      match.usedCards = []
-      match = dealCards(match);
-      match = sortBySuit(match)
-      match = resetBids(match);
-      for (let i=0; i < bidBoxArray.length; i++) {
-        bidBoxArray[i].opacity = 1;
-      }
-      match.round = 0;
-      match.roundCheck = false;
-      match.trump = 'none'
-      Session.set('playCard',false)
-      Session.set('animationSpeed', {fast: 1000, medium: 2000, slow: 3000})
-      Session.set('updatingMatch',false)
+      // END OF ROUND //
+
+      if (match.round == 5) {
+        console.log("Ending round...")
+        match = updateScore(match);
+        match = checkIfWinner(match)
+        match = changeDealer(match);
+        match = changeTurnLeftOfDealer(match);
+        // ARBITRARY FIX... better way is to only reset the cards that have already been played
+        match.cards = deckReset(match);
+        match.usedCards = []
+        match = dealCards(match);
+        match = sortBySuit(match)
+        match = resetBids(match);
+        for (let i=0; i < bidBoxArray.length; i++) {
+          bidBoxArray[i].opacity = 1;
+        }
+        match = checkIfPunted(match)
+        match.round = 0;
+        match.roundCheck = false;
+        match.trump = 'none'
+        Session.set('playCard',false)
+        Session.set('animationSpeed', {fast: 1000, medium: 2000, slow: 3000})
+        Session.set('updatingMatch',false)
         }
 
-      // 4: Deal cards
+      ///////////////////////
+
+      // DEAL CARDS //
+
       if (match.cardsDealt == false) {
-        console.log("Dealing cards...")
+        Session.set('playText', "Dealing cards...")
         match = dealCards(match)
-        // Sort user cards by suit here...
         match = sortBySuit(match)
       }
 
+      ///////////////////////
 
-      // 5: Make bids
+
+      // BID ROUND //
+
       if (bidsComplete(match) == false) {
         turnId = getPlayerTurn(match)
-        console.log(match)
-        console.log(turnId)
         if (Session.get('makingBid') == false) {
-          if (turnId[0] + turnId[1] + turnId[2] == 'com') {
+          if (turnId[0] + turnId[1] + turnId[2] == 'com' && match.players[getPlayerIndex(match,turnId)].punted == false) {
             Session.set('makingBid',true)
             Meteor.setTimeout(function(){
               Session.set('makingBid',false)
@@ -382,92 +487,90 @@ Arena = React.createClass({
               let index = getPlayerIndex(match,turnId)
               match.players[index].currentBid = bid;
               match.players[index].bidMade = true;
+              Session.set('playText',match.players[index].userId + " " + "is making a bid of" + " " + bid + "...");
               updateMatch(match)},Session.get('animationSpeed').medium);
+            }
+            if (match.players[getPlayerIndex(match,turnId)].punted) {
+              match = changeTurn(match)
             }
           }
         }
 
-      // 6: Pick Trump
+      ///////////////////////
+
+      // TRUMP ROUND //
+
       if (bidsComplete(match) && match.trump == 'none') {
         if (Session.get('pickingTrump') == false) {
-          console.log("Picking trump...")
           Session.set('pickingTrump', true)
-          if (match.players[getPlayerIndex(match,Meteor.user()._id)].pickTrump) {
-            console.log("User is picking trump...")
-          }
-          else {
-          Meteor.setTimeout(function(){
-            match = setTrump(match);
-            Session.set('pickingTrump',false)
-            Session.set('playCard',true)
-            updateMatch(match)},Session.get('animationSpeed').medium);
+          if (match.players[getPlayerIndex(match,Meteor.user()._id)].pickTrump == false) {
+            Meteor.setTimeout(function(){
+              match = setTrump(match);
+              Session.set('pickingTrump',false)
+              Session.set('playCard',true)
+              updateMatch(match)},Session.get('animationSpeed').medium);
           }
         }
-
       }
 
-      // 7: Play or Sit
+      ///////////////////////
+
+      // PLAY OR SIT ROUND //
+
       if (checkIfRoundCheck(match) == false && bidsComplete(match) && match.trump != 'none'){
-        // If trump is spades, everyone must play
-        if (match.trump == 'spades') {
+        if (match.trump == 'spades') {  // If trump is spades, everyone must play
+          Session.set('playText',"Trump is spades...everyone plays")
           for (let i = 0; i < match.players.length; i++) {
-            match.players[i].isPlaying = true
-            match.players[i].isPlayingChoice = true
-            if (match.players[i].highBidder == false) {
-              match.players[i].currentBid = 1;
+            if (match.players[i].punted == false) {
+              match.players[i].isPlaying = true
+              match.players[i].isPlayingChoice = true
+              if (match.players[i].highBidder == false) {
+                match.players[i].currentBid = 1;
+                match.players[i].sits = 0
+              }
             }
           }
         }
         else {
           turnId = getPlayerTurn(match)
           if (Session.get('PlayOrSit') == false) {
-            if (turnId[0] + turnId[1] + turnId[2] == 'com') {
+            if (turnId[0] + turnId[1] + turnId[2] == 'com' && match.players[getPlayerIndex(match,turnId)].punted == false) {
               Session.set('PlayOrSit',true)
               Meteor.setTimeout(function(){
-              Session.set('PlayOrSit',false)
-              let index = getPlayerIndex(match,turnId)
+                Session.set('PlayOrSit',false)
+                let index = getPlayerIndex(match,turnId)
                 if (match.players[index].highBidder == false) {
                   match = changeTurn(match)
-                  // REQUIRED: Algorithm to determine if a computer is playing or not. If player bids high, must play.
                   match = checkIfPlaying(match,index)
-                  //match.players[index].isPlaying = true;
-                  //match.players[index].isPlayingChoice = true;
-                  //match.players[index].currentBid = 1;
                 }
                 else {
                   match.players[index].isPlaying = true
                   match.players[index].isPlayingChoice = true;
+                  Session.set('playText',match.players[index].userId + " " + "is playing...")
                 }
                 updateMatch(match)},Session.get('animationSpeed').medium);
+              }
+              if (match.players[getPlayerIndex(match,turnId)].punted) {
+                match = changeTurn(match)
               }
             }
           }
         }
-
       if (checkIfRoundCheck(match) && match.roundCheck == false){
         Meteor.setTimeout(function() {
-        for (let i=0; i < match.players.length; i++) {
-          match.players[i].turn = false
+          for (let i=0; i < match.players.length; i++) {
+            match.players[i].turn = false
+          }
+          match = changeTurnLeftOfDealer(match)
+          match.roundCheck = true;
+          updateMatch(match)},1000);
         }
-        match = changeTurnLeftOfDealer(match)
-        match.roundCheck = true;
-        console.log("ROUND CHECK COMPLETE")
-        updateMatch(match)
-      },1000);
-      }
-
       turnId = getPlayerTurn(match)
 
-      // 8: If computer's turn, play computer card
-      if (checkIfRoundCheck(match) && match.type == 'computer' && match.cardsPlayed < match.players.length && (turnId[0] + turnId[1] + turnId[2] == 'com') && match.trump != 'none') {
-        if (bidsComplete(match) && Session.get('playCard') && match.roundCheck == true && match.players[getPlayerIndex(match,turnId)].isPlaying) {
-        Meteor.setTimeout(function() {
-          match = playComputerCard(match,turnId)
-          updateMatch(match)}, Session.get('animationSpeed').fast)
-        }
-      }
+      ///////////////////////
 
-      // CHECK TO SEE WHO IS PLAYING
+      // CHANGE TURN //
+
       if (checkIfRoundCheck(match) && match.roundCheck) {
         var playerCount = 0;
         for (let i =0; i < match.players.length; i++) {
@@ -480,20 +583,36 @@ Arena = React.createClass({
         }
       }
 
+      ///////////////////////
 
-      // 9: If all cards played, calculate trick
+      // PLAY CARD //
+
+      if (checkIfRoundCheck(match) && match.type == 'computer' && match.cardsPlayed < playerCount && (turnId[0] + turnId[1] + turnId[2] == 'com') && match.trump != 'none') {
+        if (bidsComplete(match) && Session.get('playCard') && match.roundCheck == true && match.players[getPlayerIndex(match,turnId)].isPlaying) {
+        Meteor.setTimeout(function() {
+          match = computerCardAlgorithm(match,turnId)
+          updateMatch(match)}, Session.get('animationSpeed').fast)
+        }
+      }
+
+      ///////////////////////
+
+      // CALCULATE TRICK //
+
       if (match.cardsPlayed == playerCount) {
         for (let i=0; i< match.players.length; i++) {
           match.players[i].turn = false
         }
-        console.log("Updating tricks....")
         Session.set('updatingMatch',true)
         Meteor.setTimeout(function() {
           match = updateTrick(match)
           Session.set('updatingMatch',false)
           updateMatch(match)}, Session.get('animationSpeed').medium)
         }
-      }
+
+      ///////////////////////
+
+    }
 
     updateMatch(match)
 
@@ -503,21 +622,22 @@ Arena = React.createClass({
             {this.renderChoice()}
 
             <div style={userStyle}>
-              <div className="user-profile panel panel-info" style={profileStyle}>
-                <div style={this.renderStyle()} className="panel-heading"> </div>
-                <h1 style={scoreStyle}> {match.players[getPlayerIndex(match,Meteor.user()._id)].score} </h1>
-                {this.renderBidBoxes()}
-                {this.renderIcons()}
-              </div>
+
+                <h1 style={scoreStyle}> Score: {match.players[getPlayerIndex(match,Meteor.user()._id)].score} </h1>
+                <h1 style={bidStyle}> Current Bid: {this.renderBidBoxes()}</h1>
+                <h1 style={trickStyle}> Tricks Won: {this.renderTricks()}</h1>
+
+
             <div className="panel panel-info"  style={trumpCard}>
-              <div className="panel-heading"> </div>
+              <div className="panel-heading" style={trumpBG}>  </div>
               <img src={this.renderTrump()} className="responsive trump-style" style={trumpStyle}/>
             </div>
           </div>
           {this.renderCards()}
 
-
       </div>
       )
     }
   })
+
+///      {this.renderText()}

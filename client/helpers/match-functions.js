@@ -2,11 +2,20 @@
 /*       GLOBALS       */
 /////////////////////////
 
-var playerStyleArray = [{position: 'absolute', top: '50%', left: '10%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white'},
-{position: 'absolute', top: '18%', left: '20%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white'},
-{position: 'absolute', top: '18%', left: '47%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white'},
-{position: 'absolute', top: '18%', left: '80%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white'},
-{position: 'absolute', top: '50%', left: '90%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white'}]
+//var playerStyleArray = [{position: 'absolute', top: '50%', left: '10%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white'},
+//{position: 'absolute', top: '18%', left: '20%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white'},
+//{position: 'absolute', top: '18%', left: '47%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white'},
+//{position: 'absolute', top: '18%', left: '80%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white'},
+//{position: 'absolute', top: '50%', left: '90%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white'}]
+
+var playerStyleArray = [{position: 'absolute', top: '50%', left: '10%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white',opacity:0.5},
+{position: 'absolute', top: '18%', left: '10%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white',opacity:0.5},
+{position: 'absolute', top: '18%', left: '30%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white',opacity:0.5},
+{position: 'absolute', top: '18%', left: '50%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white',opacity:0.5},
+{position: 'absolute', top: '18%', left: '70%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white',opacity:0.5},
+{position: 'absolute', top: '18%', left: '90%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white',opacity:0.5},
+{position: 'absolute', top: '50%', left: '90%', width: '10%', height: '20%', transform: 'translate(-50%, -50%)', background: 'white',opacity:0.5}
+]
 
 
 /////////////////////////
@@ -196,27 +205,37 @@ getComputerBid = function(playerId,match) {
       }
     }
   }
+  if (currentHighestBid == 0) {
+    return 1
+  }
   // Are you conservative or risky?
-  var choice = Math.floor(Math.random()*2)
-  if (choice == 0) {
-    var cards = sortComputerCards(match.players[index].cards)
-    var highSuit = cards[0].suit;
-    var count = 1;
-    for (let i = 1; i < cards.length; i++) {
-      if (cards[i].suit == highSuit) {
+  var cards = sortComputerCards(match.players[index].cards)
+  var highSuit = cards[0].suit;
+  var count = 1;
+  for (let i = 1; i < cards.length; i++) {
+    if (cards[i].suit == highSuit) {
+      if (cards[i].number >= 9) {
         count += 1;
       }
     }
-    if (count > currentHighestBid) {
-      return count
+  }
+  if (count > currentHighestBid) {
+    return count
+  }
+  else {
+    count = 1;
+    for (let i = 1; i < cards.length; i++) {
+      if (cards[i].suit == highSuit) {
+          count += 1;
+      }
+    }
+    if (count > 3) {
+      return 2
     }
     else {
       count = 0;
       return count
     }
-  }
-  else {
-    return 0
   }
 }
 
@@ -244,7 +263,7 @@ getHighBidder = function(match) {
 bidsComplete = function(match) {
   var check = 0;
   for (var i=0; i < match.players.length; i++) {
-    if (match.players[i].bidMade) {
+    if (match.players[i].bidMade || match.players[i].punted) {
       check +=1;
     }
   }
@@ -257,10 +276,6 @@ bidsComplete = function(match) {
   }
 }
 
-
-/////////////////////////
-/* UPDATE FUNCTIONS */
-/////////////////////////
 
 sortComputerCards = function(cards) {
   var cardsSwitched = 0;
@@ -279,63 +294,134 @@ sortComputerCards = function(cards) {
 }
 
 
-playComputerCard = function(match,turnId) {
-      var i = getPlayerIndex(match,turnId)
-      console.log(i + " " + "is playing cards...")
-      console.log(match)
-      var cardsSwitched = 0;
-      do {
-        cardsSwitched = 0;
-        for (var j =0; j < match.players[i].cards.length -1; j++) {
-          if (match.players[i].cards[j].number < match.players[i].cards[j+1].number) {
-            var tmp = match.players[i].cards[j];
-            match.players[i].cards[j] = match.players[i].cards[j+1]
-            match.players[i].cards[j+1] = tmp;
-            cardsSwitched += 1;
-          }
-        }
-      } while (cardsSwitched > 0);
-      // If no cards are played, computer card becomes Lead Card.  Highest card played.
-        if (match.fieldCards.length == 0) {
-          // find highest card and play it.
-          match.fieldCards.push({card: match.players[i].cards[0], owner: match.players[i].userId, leadCard: true})
-          var fieldPosition = match.fieldCards.length - 1
-          match.players[i].cards[0].cardPlayed = true;
-          match.players[i].cards[0].position = fieldPosition
-          //match.players[index].cards[i].final = {x: window.innerWidth*(0.26 + fieldPosition*0.09), y:(window.innerHeight*0.70 - window.innerHeight*0.30)}
-          //match.players[i].cards.splice(0,1)
-          match.cardsPlayed += 1;
-          match = changeTurn(match)
-          return match
-        }
-        else {
-          // If not the lead card, find highest card which matches the lead card suit and play it.
-          var leadCard = getLeadCard(match)
-          for (var j =0; j < match.players[i].cards.length; j++) {
-            if (match.players[i].cards[j].suit == leadCard.card.suit) {
-              match.fieldCards.push({card: match.players[i].cards[j], owner: match.players[i].userId, leadCard: false})
-              //match.players[i].cards.splice(j,1)
-              var fieldPosition = match.fieldCards.length - 1
-              match.players[i].cards[j].cardPlayed = true;
-              match.players[i].cards[j].position = fieldPosition
-              match = changeTurn(match)
-              match.cardsPlayed += 1;
+sortFieldCards = function(cards) {
+  var cardsSwitched = 0;
+  do {
+    cardsSwitched = 0;
+    for (var i =0; i < cards.length -1; i++) {
+      if (cards[i].card.number < cards[i+1].card.number) {
+        var tmp = cards[i];
+        cards[i] = cards[i+1]
+        cards[i+1] = tmp;
+        cardsSwitched += 1;
+      }
+    }
+  } while (cardsSwitched > 0);
+  return cards
+}
 
-              return match
+
+/////////////////////////
+/* COMPUTER FUNCTIONS */
+/////////////////////////
+
+
+playHighestCard = function(match,index) {
+  /* (Document,Number) --> Document
+     Play highest card.
+  */
+  match.fieldCards.push({card: match.players[index].cards[0], owner: match.players[index].userId, leadCard: true})
+  match.players[index].cards[0].cardPlayed = true;
+  match.players[index].cards[0].position = match.fieldCards.length - 1
+  match.cardsPlayed += 1;
+  match = changeTurn(match)
+  return match
+}
+
+playComputerCard = function(match,pIndex,cIndex) {
+  /* (Document,Number,Number) --> Document
+     Play chosen card.
+  */
+  match.fieldCards.push({card: match.players[pIndex].cards[cIndex], owner: match.players[pIndex].userId, leadCard: false})
+  match.players[pIndex].cards[cIndex].cardPlayed = true;
+  match.players[pIndex].cards[cIndex].position = match.fieldCards.length - 1
+  match = changeTurn(match)
+  match.cardsPlayed += 1;
+  Session.set('playText',match.players[pIndex].userId + " " + "is playing the " + match.players[pIndex].cards[cIndex].number + " " + "of" + " " + match.players[pIndex].cards[cIndex].suit)
+  return match
+}
+
+computerCardAlgorithm = function(match,turnId) {
+  var i = getPlayerIndex(match,turnId)
+
+  // 1: Sort player cards from highest to lowest
+  var cardsSwitched = 0;
+  do {
+    cardsSwitched = 0;
+    for (var j =0; j < match.players[i].cards.length -1; j++) {
+      if (match.players[i].cards[j].number < match.players[i].cards[j+1].number) {
+        var tmp = match.players[i].cards[j];
+        match.players[i].cards[j] = match.players[i].cards[j+1]
+        match.players[i].cards[j+1] = tmp;
+        cardsSwitched += 1;
+        }
+      }
+    } while (cardsSwitched > 0);
+
+  // 2:  If no cards are played, computer card becomes Lead Card.  Highest card played.... Add possible algorithm which decides whether to play a trump or not
+  if (match.fieldCards.length == 0) {
+    return playHighestCard(match,i)
+  }
+  else {
+    var leadCard = getLeadCard(match)
+    var fieldCards = sortFieldCards(match.fieldCards)
+    var isTrump = false;
+    var highTrump = 0;
+    for (let i =0; i < fieldCards.length; i++) {
+      // Has a trump card been played?
+      if (fieldCards[i].card.suit == match.trump) {
+        isTrump = true;
+        highTrump = fieldCards[i].card.number
+        break
+      }
+    }
+    if (isTrump) {
+    // If a trump card has been played, user plays lowest matched suit (if any)
+      for (var j =match.players[i].cards.length-1; j >= 0; j--) {
+        if (match.players[i].cards[j].suit == leadCard.card.suit) {
+          return playComputerCard(match,i,j)
+        }
+      }
+    }
+    else {
+      for (var j =0; j < match.players[i].cards.length; j++) {
+      // Either a) highest matched suit or b) lowest matched suit (if any)
+        if (match.players[i].cards[j].suit == leadCard.card.suit) {
+          if (match.players[i].cards[j].number > leadCard.card.number) {
+            return playComputerCard(match,i,j)
+          }
+          else {
+            for (var j =match.players[i].cards.length-1; j >= 0; j--) {
+              if (match.players[i].cards[j].suit == leadCard.card.suit) {
+                return playComputerCard(match,i,j)
+              }
             }
           }
-          // If no matching suit is found then play highest card.
-          match.fieldCards.push({card: match.players[i].cards[0], owner: match.players[i].userId, leadCard: false})
-          //match.players[i].cards.splice(0,1)
-          var fieldPosition = match.fieldCards.length - 1
-          match.players[i].cards[0].cardPlayed = true;
-          match.players[i].cards[0].position = fieldPosition
-          match.cardsPlayed += 1;
-          match = changeTurn(match)
-
-          return match
         }
+      }
+    }
+
+    // 3:  If no matching suit is found then play highest card (if trump and can win, else play lowest card.)
+    for (var j =0; j < match.players[i].cards.length; j++) {
+      if (match.players[i].cards[j].suit == match.trump) {
+        if (isTrump) {
+          if (match.players[i].cards[j].number > highTrump) {
+            return playComputerCard(match,i,j)
+          }
+        }
+        else {
+          return playComputerCard(match,i,j)
+        }
+      }
+    }
+    var l = match.players[i].cards.length
+    return playComputerCard(match,i,l-1)
   }
+}
+
+/////////////////////////
+/* UPDATE FUNCTIONS */
+/////////////////////////
 
 updateMatch = function(match) {
   /* Document -> NaN
@@ -396,6 +482,7 @@ updateTrick = function(match) {
   Session.set('endOfTrick', true)
   match.players[index].currentTrick += 1;
   match.players[index].turn = true;
+  Session.set('playText', match.players[index].userId + " wins the trick!")
   for (var i =0; i < match.players.length; i++) {
     if (i != index) {
       match.players[i].turn = false;
@@ -577,7 +664,8 @@ checkIfPunted = function(match) {
           match.players[i-1].dealer = true
         }
       }
-      match.players.splice(i,1)
+      match.players[i].isPlaying = false
+      match.players[i].punted = true
     }
   }
   return match
@@ -599,17 +687,42 @@ checkIfWinner = function(match) {
 }
 
 checkIfPlaying = function(match,index) {
+  if (match.players[index].sits == 2) {
+    match.players[index].isPlaying = true;
+    match.players[index].isPlayingChoice = true;
+    match.players[index].currentBid = 1;
+    match.players[index].sits = 0
+    Session.set('playText',match.players[index].userId + " " + "is playing...")
+    return match
+  }
   if (match.players[index].currentBid >= 1) {
     match.players[index].isPlaying = true
     match.players[index].isPlayingChoice = true
     match.players[index].currentBid = 1
+    Session.set('playText',match.players[index].userId + " " + "is playing...")
     return match
   }
   if (match.players[index].currentBid == 0) {
-    if (match.players[index].cards[0].number > 9) {
+    var nOfTrumpCards = 0;
+    for (let i =0; i < match.players[index].cards.length; i++) {
+      if (match.players[index].cards[i].suit == match.trump) {
+        nOfTrumpCards += 1;
+      }
+    }
+    if (nOfTrumpCards >= 2) {
       match.players[index].isPlaying = true
       match.players[index].isPlayingChoice = true
       match.players[index].currentBid = 1
+      match.players[index].sits = 0
+      Session.set('playText',match.players[index].userId + " " + "is playing...")
+      return match
+    }
+    if (match.players[index].cards[0].number > 10 && match.players[index].cards[1].number > 10) {
+      match.players[index].isPlaying = true
+      match.players[index].isPlayingChoice = true
+      match.players[index].currentBid = 1
+      match.players[index].sits = 0
+      Session.set('playText',match.players[index].userId + " " + "is playing...")
       return match
     }
     else {
@@ -617,6 +730,12 @@ checkIfPlaying = function(match,index) {
       match.players[index].cards = []
       match.players[index].isPlayingChoice = true
       match.players[index].currentBid = 0
+      match.players[index].sits += 1;
+      // +1 to score if player sits a round with 5 or less points
+      if (match.players[index].score <= 5) {
+        match.players[index].score += 1;
+      }
+      Session.set('playText',match.players[index].userId + " " + "is sitting...")
       return match
     }
   }
@@ -681,7 +800,7 @@ checkIfTurn = function(match) {
 
 checkIfRoundCheck = function(match) {
   for (var i=0; i < match.players.length; i++) {
-    if (match.players[i].isPlayingChoice == false) {
+    if (match.players[i].isPlayingChoice == false && match.players[i].punted == false) {
       return false
     }
   }
@@ -730,7 +849,6 @@ setTrump = function(match) {
   }
 
   var trumpId = match.players[index].userId
-  console.log("IS THIS WORKING" + trumpId)
   // Computer Picks Trump
   if (trumpId[0] + trumpId[1] + trumpId[2] == 'com') {
     for (var i=0; i < match.players.length; i++) {
@@ -742,6 +860,7 @@ setTrump = function(match) {
     // Trump is highest card
     var cards = sortComputerCards(match.players[index].cards)
     match.trump = cards[0].suit;
+    Session.set('playText',match.players[index].userId + " " + "is picking trump of" + " " + match.trump + "...")
     return match
   }
   // Player Picks Trump

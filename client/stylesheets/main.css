@@ -1,7 +1,116 @@
+.circle {
+	border-radius: 50%;
+	width: 200px;
+	height: 200px;
+	/* width and height can be anything, as long as they're equal */
+}
+
+
+
+
+.hexagon {
+  position: absolute;
+  width: 200px;
+  height: 115.47px;
+  background-color: #DFE2DB;
+  cursor:pointer;
+}
+
+.hexagon:before,
+.hexagon:after {
+  content: "";
+  position: absolute;
+  width: 0;
+  border-left: 100px solid transparent;
+  border-right: 100px solid transparent;
+}
+
+.hexagon:before {
+  bottom: 100%;
+  border-bottom: 57.74px solid #DFE2DB;
+}
+
+.hexagon:after {
+  top: 100%;
+  width: 0;
+  border-top: 57.74px solid #DFE2DB;
+}
+
+
+
+.hexagon1 {
+  position: relative;
+  width: 130px;
+  height: 75.06px;
+  background-color: #DFE2DB;
+  margin: 37.53px 0;
+}
+
+.hexagon1:before,
+.hexagon1:after {
+  content: "";
+  position: absolute;
+  width: 0;
+  border-left: 65px solid transparent;
+  border-right: 65px solid transparent;
+}
+
+.hexagon1:before {
+  bottom: 100%;
+  border-bottom: 37.53px solid #DFE2DB;
+}
+
+.hexagon1:after {
+  top: 100%;
+  width: 0;
+  border-top: 37.53px solid #DFE2DB;
+}
+
+
+
+
+.hexagon2 {
+  position: absolute;
+  width: 100px;
+  height: 57.74px;
+  background-color: #DFE2DB;
+  margin: 28.87px 0;
+  cursor:pointer;
+}
+
+.hexagon2:before,
+.hexagon2:after {
+  content: "";
+  position: absolute;
+  width: 0;
+  border-left: 50px solid transparent;
+  border-right: 50px solid transparent;
+}
+
+.hexagon2:before {
+  bottom: 100%;
+  border-bottom: 28.87px solid #DFE2DB;
+}
+
+.hexagon2:after {
+  top: 100%;
+  width: 0;
+  border-top: 28.87px solid #DFE2DB;
+}
+
+
+
+
+@font-face {
+  font-family: 'titleFont';
+  src: url('double_force_7.ttf')
+}
+
+
 body {
   overflow-y: hidden;
   overflow-x: hidden;
-  background-image: url('pw_maze_black.png');
+  background-image: url('stressed_linen.png');
   margin: 0;
 }
 
@@ -17,4 +126,27 @@ body {
   height: '30%';
   top: '70%';
   left: '0';
+}
+
+
+.sidebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  box-shadow: 0 0 30px black;
+  background: #fff;
+  -webkit-transition: all 1s ease;
+  -moz-transition: all 1s ease;
+  -o-transition: all 1s ease;
+  transition: all 1s ease;
+}
+
+}
+.sidebar-middle {
+  position: absolute;
+  width: 90%;
+  display: block;
 }

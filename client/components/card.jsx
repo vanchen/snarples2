@@ -19,9 +19,28 @@ UserCard = React.createClass({
           if (match.fieldCards.length == 0 || this.props.fieldCheck == false) {
             match.fieldCards.push({card: match.players[index].cards[i], owner: Meteor.user()._id, leadCard: true})
             var fieldPosition = match.fieldCards.length - 1
+            var yOffSet = false;
             match.players[index].cards[i].cardPlayed = true;
-            match.players[index].cards[i].position = fieldPosition
-            match.players[index].cards[i].final = {x: window.innerWidth*(0.21 + fieldPosition*0.09), y:(window.innerHeight*0.70 - window.innerHeight*0.33)}
+            if (fieldPosition == 5) {
+              fieldPosition = 0
+              yOffSet = true
+            }
+            if (fieldPosition == 6) {
+              fieldPosition = 1
+              yOffSet = true
+            }
+            if (fieldPosition == 7) {
+              fieldPosition = 2
+              yOffset = true
+            }
+            if (yOffSet == false) {
+              match.players[index].cards[i].position = fieldPosition
+              match.players[index].cards[i].final = {x: window.innerWidth*(0.21 + fieldPosition*0.09), y:(window.innerHeight*0.70 - window.innerHeight*0.33)}
+            }
+            else {
+              match.players[index].cards[i].position = fieldPosition
+              match.players[index].cards[i].final = {x: window.innerWidth*(0.21 + fieldPosition*0.09), y:(window.innerHeight*0.77 - window.innerHeight*0.33)}
+            }
             //this.setState({
               //finalPosition: {x:200, y: -300}
             //});
@@ -35,9 +54,28 @@ UserCard = React.createClass({
             if (leadCard.card.suit == this.props.suit) {
               match.fieldCards.push({card: match.players[index].cards[i], owner: Meteor.user()._id, leadCard: false})
               var fieldPosition = match.fieldCards.length - 1
+              var yOffSet = false;
               match.players[index].cards[i].cardPlayed = true;
-              match.players[index].cards[i].position = fieldPosition
-              match.players[index].cards[i].final = {x: window.innerWidth*(0.21 + fieldPosition*0.09), y:(window.innerHeight*0.70 - window.innerHeight*0.33)}
+              if (fieldPosition == 5) {
+                fieldPosition = 0
+                yOffSet = true
+              }
+              if (fieldPosition == 6) {
+                fieldPosition = 1
+                yOffSet = true
+              }
+              if (fieldPosition == 7) {
+                fieldPosition = 2
+                yOffSet = true
+              }
+              if (yOffSet == false) {
+                match.players[index].cards[i].position = fieldPosition
+                match.players[index].cards[i].final = {x: window.innerWidth*(0.21 + fieldPosition*0.09), y:(window.innerHeight*0.70 - window.innerHeight*0.33)}
+              }
+              else {
+                match.players[index].cards[i].position = fieldPosition
+                match.players[index].cards[i].final = {x: window.innerWidth*(0.21 + fieldPosition*0.09), y:(window.innerHeight*0.77 - window.innerHeight*0.33)}
+              }
               //this.setState({
                 //finalPosition: {x:200, y: -300}
               //});
